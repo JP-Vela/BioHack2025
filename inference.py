@@ -19,11 +19,11 @@ def transform_set(scalar, data, fit=False):
 
 
 dataset_dir = 'dataset/original_data'
-filename = 'subjectc-neutral-1.csv'
+# filename = '10sec.csv'
+# filename = 'subjectd-concentrating-2.csv'
+filename = 'subjectd-concentrating-1.csv' # in original_data
 
-classes = ['concentrating', 'neutral']#, 'relaxed']
-datasets_by_class = {'concentrating':[], 'neutral':[], 'relaxed':[]}
-test_sets_by_class = {'concentrating':[], 'neutral':[], 'relaxed':[]}
+
 window_size = 256 #samples
 
 
@@ -53,7 +53,7 @@ while row < sub_df.shape[0]:
 windows = np.asarray(windows, dtype='object')
 windows = windows[:, :, 1:5]
 
-print(windows[0].shape)
+# print(windows[0].shape)
 
 X_scalar = None
 
@@ -64,6 +64,15 @@ with open('models/X_scalar.pckl', 'rb') as file:
 windows = transform_set(X_scalar, np.array(windows), fit=False)
 
 
-model = keras.models.load_model('models/m1.keras', custom_objects=None, compile=True, safe_mode=True)
+model = keras.models.load_model('models/best_model_2.keras', custom_objects=None, compile=True, safe_mode=True)
 preds = model.predict(windows)
-print(preds)
+print(np.round(preds,4))
+
+score = 0
+
+for i in range(preds.shape[0]):
+    is_equal = (np.round(preds[i]) == 0)
+    if is_equal:
+        score+=1
+
+print(f"{score}/{preds.shape[0]}")
