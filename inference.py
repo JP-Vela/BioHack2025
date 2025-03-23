@@ -2,6 +2,13 @@ import numpy as np
 import pandas as pd
 import tensorflow.keras as keras
 import pickle
+import json
+import matplotlib.pyplot as plt
+
+
+def plotit(sample):
+    plt.imshow(sample, cmap='gray', interpolation='nearest', aspect='auto')
+    plt.show()
 
 
 def transform_set(scalar, data, fit=False):
@@ -18,16 +25,18 @@ def transform_set(scalar, data, fit=False):
     return reshaped
 
 
-dataset_dir = 'dataset/original_data'
+# dataset_dir = 'dataset/original_data'
+dataset_dir = 'dataset/our_data'
 # filename = '10sec.csv'
 # filename = 'subjectd-concentrating-2.csv'
-filename = 'subjectd-concentrating-1.csv' # in original_data
+# filename = 'subjecta-neutral-1' # in original_data
+filename = 'concentrating_johnpaul1'
 
 
 window_size = 256 #samples
 
 
-sub_df = pd.read_csv(f"{dataset_dir}/{filename}") 
+sub_df = pd.read_csv(f"{dataset_dir}/{filename}.csv") 
 
 # NOTE: Split the data after reading, THEN perform sliding window
 
@@ -64,15 +73,22 @@ with open('models/X_scalar.pckl', 'rb') as file:
 windows = transform_set(X_scalar, np.array(windows), fit=False)
 
 
-model = keras.models.load_model('models/best_model_2.keras', custom_objects=None, compile=True, safe_mode=True)
+model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
 preds = model.predict(windows)
-print(np.round(preds,4))
+
+with open(f'results/{filename}.json', 'w') as f:
+    obj = {'class': (preds*100).reshape((preds.shape[0],)).tolist()}
+    # print(obj)
+    json.dump(obj, f)
 
 score = 0
 
 for i in range(preds.shape[0]):
     is_equal = (np.round(preds[i]) == 0)
     if is_equal:
+
+        # plotit(windows[i])
         score+=1
 
+print(preds)
 print(f"{score}/{preds.shape[0]}")
