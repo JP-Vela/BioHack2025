@@ -30,13 +30,15 @@ dataset_dir = 'dataset/our_data'
 # filename = '10sec.csv'
 # filename = 'subjectd-concentrating-2.csv'
 # filename = 'subjecta-neutral-1' # in original_data
-filename = 'concentrating_johnpaul1'
+filename = 'JonnyUnderstanding'
 
 
 window_size = 256 #samples
 
 
 sub_df = pd.read_csv(f"{dataset_dir}/{filename}.csv") 
+cutoff = int(sub_df.shape[0]*0.85)
+sub_df = sub_df.iloc[cutoff:]
 
 # NOTE: Split the data after reading, THEN perform sliding window
 
@@ -46,17 +48,10 @@ cur_window = []
 sample_count = 0
 
 row=0
-while row < sub_df.shape[0]:
-    sample_count+=1
-    cur_window.append(sub_df.iloc[row])
+while row+window_size < sub_df.shape[0]:
+    windows.append(sub_df.iloc[row:row+window_size])
+    row+=int(window_size*0.1)
 
-    if sample_count == window_size:
-        windows.append(cur_window)
-        cur_window = []
-        sample_count = 0
-        row-=window_size//2
-
-    row+=1
 
 
 windows = np.asarray(windows, dtype='object')
@@ -73,22 +68,28 @@ with open('models/X_scalar.pckl', 'rb') as file:
 windows = transform_set(X_scalar, np.array(windows), fit=False)
 
 
-model = keras.models.load_model('models/jp.keras', custom_objects=None, compile=True, safe_mode=True)
+model = keras.models.load_model("models/3_output_model_jonny_2.keras", custom_objects=None, compile=True, safe_mode=True)
 preds = model.predict(windows)
 
-with open(f'results/{filename}.json', 'w') as f:
+'''with open(f'results/{filename}.json', 'w') as f:
     obj = {'class': (preds*100).reshape((preds.shape[0],)).tolist()}
     # print(obj)
     json.dump(obj, f)
-
+'''
 score = 0
 
-for i in range(preds.shape[0]):
-    is_equal = (np.round(preds[i]) == 0)
-    if is_equal:
+# Confused, Control, Understanding
+for i in range(0, preds.shape[0], 3):
 
-        # plotit(windows[i])
+    is_equal = (np.round(preds[i+1]) == np.array([0,0,1]))
+    
+    if is_equal.all():
         score+=1
+        # print(preds[i])
+        # plotit(X_test_scaled[i])
 
-print(preds)
-print(f"{score}/{preds.shape[0]}")
+
+for p in np.round(preds):
+    print(p)
+
+print(f"{score}/{preds.shape[0]/3} = {score/(preds.shape[0]/3)*100}%")
